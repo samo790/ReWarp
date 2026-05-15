@@ -763,3 +763,61 @@
 .set TR_ADDREQUEST,		9
 .set UNIT_MICROHZ,		0
 
+# ==============================================================================
+# REWARP & POWERUP BRIDGE DEFINITIONS (COMPLETE & SYNCED)
+# ==============================================================================
+
+# --- ReWarp Internals (Sincronizzati con interfaces.i corretto) ---
+.set lib_Flags,        14
+.set lib_Version,      20
+.set lib_Revision,     22
+.set lib_OpenCnt,      32   # Offset standard AmigaOS
+
+# Puntatori alle Interfacce (Spostati a offset 36 per evitare collisioni)
+.set libwarp_IExec,    36   
+.set libwarp_IDOS,     40   
+.set libwarp_IUtility, 44   
+.set libwarp_ITimer,   48   
+
+# --- PowerUP Compatibility (Phase5 LVOs) ---
+# Allineati con _PowerUP_JumpTable in powerlib.s
+.set PUP_RunPPC_LVO,        -30
+.set PUP_AllocSignal_LVO,   -54   # Definito per ABI 100%
+.set PUP_FreeSignal_LVO,    -60   # Definito per ABI 100%
+.set PUP_GetPPCState_LVO,   -90
+.set PUP_SetSignal_LVO,     -300  # Definito per ABI 100%
+.set PUP_SPrintF_LVO,       -306  # Allineato allo standard Phase5 (-306)
+.set PUP_AllocVec_LVO,      -324
+.set PUP_FreeVec_LVO,       -330
+.set PUP_WaitPPC_LVO,       -492
+.set PUP_GetConfig_LVO,     -600
+.set PUP_CreateMsgPort_LVO, -606
+.set PUP_PutMsg_LVO,        -636
+
+# --- ASOT (AllocSysObject) per OS4 ---
+.set ASOT_PORT,             4   
+.set ASOT_IOREQUEST,        0
+.set ASOT_INTERRUPT,        2
+
+# --- PowerUP Memory Flags ---
+# Mappatura dei flag memoria Phase5 (PowerUP)
+.set MEMF_PPC,              0x00002000 # Memoria accessibile da PPC
+.set MEMF_SHARED,           0x00001000 # Memoria condivisa 68k/PPC
+.set MEMF_CLEAR,            0x00010000 # Inizializza a zero
+.set MEMF_PUBLIC,           0x00000001 # Memoria pubblica
+
+# --- PowerUP Signal Definitions ---
+# Segnali standard usati dal kernel PowerUP
+.set SIGBREAKB_CTRL_C,      12
+.set SIGBREAKB_CTRL_D,      13
+.set SIGBREAKB_CTRL_E,      14
+.set SIGBREAKB_CTRL_F,      15
+
+.set SIGBREAKF_CTRL_C,      0x00001000
+.set SIGBREAKF_CTRL_D,      0x00002000
+.set SIGBREAKF_CTRL_E,      0x00004000
+.set SIGBREAKF_CTRL_F,      0x00008000
+
+# --- PCB Definitions ---
+.set PCB_SIG,               0x50434220 # 'PCB ' Signature
+.set Data_LibBase,          16         # Offset LibBase nel PCB

@@ -1,0 +1,7 @@
+vasmppc_std -quiet -Felf -many -mppc32 -m403 -I. -o powerlib.o powerlib.s
+
+vlink -belf32amigaos -T ldscript -s -n -o powerpc.library powerlib.o
+
+vasmm68k_mot -Fhunk -DTARGET_PPC=0 -o LIBS:powerup.library stubs_68k.s
+vasmm68k_mot -Fhunk -DTARGET_PPC=1 -o LIBS:ppc.library stubs_68k.s
+

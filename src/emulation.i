@@ -1,7 +1,7 @@
 
 
-.set TRAPINST,			0x4ef80000
-.set TRAPTYPE,			0x0004
+.set TRAPINST,		0x4ef80000
+.set TRAPTYPE,		0x0004
 .set TRAPTYPENR,		0x0005
 
 .set	REG68K_D0,		0
@@ -39,6 +39,7 @@
 .set	_LVOInternalLoadSeg,	-756
 .set 	_LVONewLoadSeg,		-768
 .set	_LVOSetJoyPortAttrsA,	-132
+.set	_LVOSetIoErr,		-156
 
 .set	ET_Offset,		0x80000015
 
@@ -48,3 +49,4 @@
 	.ualong	\function
 .endm
 
+.set ENABLE_PUP_SUPPORT, 1

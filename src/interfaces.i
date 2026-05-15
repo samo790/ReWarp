@@ -99,3 +99,60 @@
 .set FPutC,			292
 .set CreateNewProcTags,		432
 .set GetEntryData,		788
+
+# ==============================================================================
+# INTERFACES DEFINITIONS FOR REWARP POWERUP BRIDGE
+# ==============================================================================
+
+# --- STRUTTURA BASE LIBRERIA (Standard AmigaOS) ---
+.set lib_Flags,         14
+.set lib_Version,       20
+.set lib_Revision,      22
+.set lib_OpenCnt,       32   # Il contatore si ferma qui
+
+# --- MAPPA INTERNA REWARP (Dati Privati - Inizio offset 36 per evitare collisioni) ---
+# Questi offset devono essere usati nel Master Loader in powerlib.s
+.set Data_LibBase,      16   # Offset relativo per il PCB
+.set Data_RefCount,     20
+.set libwarp_IExec,     36   # Spostato da 32 a 36
+.set libwarp_IDOS,      40   # Spostato da 36 a 40
+.set libwarp_IUtility,  44   # Spostato da 40 a 44
+.set libwarp_ITimer,    48   # Spostato da 44 a 48
+
+# --- EXEC INTERFACE (IExec) V-TABLE ---
+.set Obtain,            60
+.set Release,           64
+.set AddHead,           76
+.set AddTail,           88
+.set AllocVec,          112
+.set FreeVec,           172
+.set AllocSignal,       276
+.set FreeSignal,        280
+.set SetSignal,         288
+.set Wait,              296
+.set GetMsg,            324
+.set PutMsg,            328
+.set ReplyMsg,          336
+.set ObtainSemaphore,   368
+.set ReleaseSemaphore,  384
+.set CacheClearU,       496
+.set CacheClearE,       492
+.set AllocSysObjectTags, 704
+.set FreeSysObject,     708
+.set LVO_RunPPC,        712
+
+# --- DOS INTERFACE (IDOS) V-TABLE ---
+.set DOS_Open,          30
+.set DOS_Close,         36
+.set DOS_Read,          42
+.set Output,            60
+.set Seek,              66
+.set IoErr,             132
+.set SetIoErr,          156
+.set GetEntryData,      788
+
+# --- UTILITY INTERFACE (IUtility) V-TABLE ---
+.set VASPrintf,         292
+
+# --- TIMER INTERFACE (ITimer) V-TABLE ---
+.set WaitTime,          72

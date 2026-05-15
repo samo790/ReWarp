@@ -1,0 +1,14 @@
+SECTIONS
+{
+	.text	 :	{
+		*(.text*)
+		*(.rodata*)
+	}
+	.data :	{
+		*(.data*)
+		*(.sdata*)
+		*(.sbss*)
+		*(.bss*)
+		*(.COMMON)
+	}
+}

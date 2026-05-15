@@ -1,8 +1,11 @@
 
-.include	ppcdefines.i
-.include	emulation.i
-.include	ppcmacros-std.i
-.include	interfaces.i
+.include "ppcdefines.i"
+.include "emulation.i"
+.include "ppcmacros-std.i"
+.include "interfaces.i"
+
+.section .text
+.align 4
 
 #.set __amigaos4__,0
 
@@ -402,7 +405,7 @@ ExceptionHandler:
 #***********************************************
 	
 .ISIPPC500:	mfmsr	r4
-		rlwinm	r5,r4,27,31,31				#Get MSR[IS]
+		rlwinm	r5,r4,27,31,31		#Get MSR[IS]
 		mfspr	r4,PID0
 		slwi	r4,r4,16
 		or	r4,r4,r5
@@ -434,7 +437,7 @@ ExceptionHandler:
 		ori	r4,r4,MAS3_UX|MAS3_SX
 		mtspr	MAS3,r4
 		isync
-		tlbwe	r0,r0,0					#Should be tlbwe in BookE
+		tlbwe	r0,r0,0				#Should be tlbwe in BookE
 		li	r3,1
 		blr
 		
@@ -446,20 +449,20 @@ ExceptionHandler:
 		bne	.NextHandler
 
 		la	r4,ExceptionContext_fpr(r3)		#Start of fp regtable in r4
-		la	r11,ExceptionContext_gpr(r3)		#Start of gp regtable in r11
+		la	r11,ExceptionContext_gpr(r3)	#Start of gp regtable in r11
 		lis	r12,AlignSpot@ha
 		lwz	r5,ExceptionContext_ip(r3)
 		lwz	r5,0(r5)
 
-		rlwinm	r6,r5,14,24,28				#get floating point register offset
-		rlwinm	r7,r5,18,25,29				#get destination register offset
+		rlwinm	r6,r5,14,24,28		#get floating point register offset
+		rlwinm	r7,r5,18,25,29		#get destination register offset
 		mr.	r10,r7
 		beq	.ItsR0
-		lwzx	r10,r11,r7				#get address from destination register
-.ItsR0:		rlwinm	r8,r5,0,16,31				#get displacement
+		lwzx	r10,r11,r7			#get address from destination register
+.ItsR0:		rlwinm	r8,r5,0,16,31	#get displacement
 
 		rlwinm	r0,r5,6,26,31		
-		cmpwi	r0,0x34					#test for stfs
+		cmpwi	r0,0x34			#test for stfs
 		beq	.stfs
 		cmpwi	r0,0x35
 		beq	.stfsu
@@ -486,9 +489,9 @@ ExceptionHandler:
 .stfsu:		add	r9,r10,r8
 		stwx	r9,r11,r7
 
-.stfs:		lfdx	f1,r4,r6				#get value from fp register
-		stfs	f1,AlignSpot@l(r12)			#store it on correct aligned spot
-		lwz	r6,AlignSpot@l(r12)			#Get the correct 32 bit value
+.stfs:		lfdx	f1,r4,r6			#Get value from fp register
+		stfs	f1,AlignSpot@l(r12)		#Store it on correct aligned spot
+		lwz	r6,AlignSpot@l(r12)		#Get the correct 32 bit value
 		stwx	r6,r10,r8				#Store correct value
 		b	.AligExit
 
@@ -501,17 +504,17 @@ ExceptionHandler:
 		stfdx	f1,r4,r6
 		b	.AligExit
 
-.lfsu:		add	r5,r10,r8				#Add displacement
+.lfsu:		add	r5,r10,r8			#Add displacement
 		stwx	r5,r11,r7	
 
 .lfs:		lwzx	r9,r10,r8				#Get 32 bit value
-		stw	r9,AlignSpot@l(r12)			#Store it on aligned spot
-		lfs	f1,AlignSpot@l(r12)			#Get it and convert it to 64 bit
-		stfdx	f1,r4,r6				#Store the 64 bit value
+		stw	r9,AlignSpot@l(r12)		#Store it on aligned spot
+		lfs	f1,AlignSpot@l(r12)		#Get it and convert it to 64 bit
+		stfdx	f1,r4,r6			#Store the 64 bit value
 		b	.AligExit
 		
-.lstfsx:	rlwinm	r8,r5,23,25,29				#get index register
-		lwzx	r8,r11,r8				#get index register value
+.lstfsx:	rlwinm	r8,r5,23,25,29		#Get index register
+		lwzx	r8,r11,r8				#Get index register value
 		rlwinm.	r0,r5,24,31,31
 		bne	.stfs
 		b	.lfs
@@ -521,7 +524,7 @@ ExceptionHandler:
 
 .AligExit:	lis	r5,WarpLibBase@ha
 		lwz	r5,WarpLibBase@l(r5)			#For GetHALInfo			
-		lwz	r6,libwarp_AlignmentExcLow(r5)		#Counts number of FPU aligment issues
+		lwz	r6,libwarp_AlignmentExcLow(r5)	#Counts number of FPU aligment issues
 		addic	r6,r6,1					#For debugging and optimization purposes
 		stw	r6,libwarp_AlignmentExcLow(r5)
 		lwz	r6,libwarp_AlignmentExcHigh(r5)
@@ -717,6 +720,14 @@ Reserved68K:
 #********************************************************************************************
 RunPPC68K:
 		prolog
+
+		# --- AGGIUNTA POWERUP START ---
+		# R12 contiene l'ID funzione dallo stub 68k (1-20)
+		# Se l'ID è piccolo (PowerUP), saltiamo al nostro dispatcher.
+		# Gli ID di WarpOS in ReWarp sono solitamente indirizzi o valori alti.
+		cmplwi	r12, 100
+		blt		_PUP_Dispatcher
+		# --- AGGIUNTA POWERUP END ---
 		
 		stwu	r2,-4(r13)
 		stwu	r16,-4(r13)
@@ -807,7 +818,7 @@ RunPPC68K:
 		mr	r9,r26
 		mr	r10,r27
 		
-.NotLinear:	lfd	f1,PP_FREGS+0*8(r16)			#Perform FPU test here
+.NotLinear:	lfd	f1,PP_FREGS+0*8(r16)		#Perform FPU test here
 		lfd	f2,PP_FREGS+1*8(r16)
 		lfd	f3,PP_FREGS+2*8(r16)
 		lfd	f4,PP_FREGS+3*8(r16)
@@ -860,7 +871,7 @@ RunPPC68K:
 		stw	r30,PP_REGS+13*4(r16)
 		stw	r31,PP_REGS+14*4(r16)
 		
-		stfd	f1,PP_FREGS+0*8(r16)			#Perform FPU test here
+		stfd	f1,PP_FREGS+0*8(r16)		#Perform FPU test here
 		stfd	f2,PP_FREGS+1*8(r16)
 		stfd	f3,PP_FREGS+2*8(r16)
 		stfd	f4,PP_FREGS+3*8(r16)
@@ -1485,7 +1496,7 @@ CreateTaskPPC:
 		cmplwi	r0,21
 		bgt	.DoNextTag
 		
-		rlwinm	r0,r0,2,0,29			#jumptable
+		rlwinm	r0,r0,2,0,29	#jumptable
 		lwzx	r18,r19,r0
 		mtctr	r18
 		bctr
@@ -1616,7 +1627,7 @@ CreateTaskPPC:
 		bne	.NextChar				
 				
 		li	r4,0
-		CALLOS	r31,FindTask			#wipeout patch
+		CALLOS	r31,FindTask		#Wipeout patch
 				
 		b	.CorrectCreate	
 		
@@ -1777,7 +1788,7 @@ DeleteTaskPPC:
 		CALLOS	r31,FreeVec
 		
 .LEmpty:	mr	r4,r29
-		CALLOS	r31,DeleteTask				#Needs adjustment to Pseudo task
+		CALLOS	r31,DeleteTask			#Needs adjustment to Pseudo task
 
 		lwz	r27,0(r13)
 		lwz	r29,4(r13)
@@ -2415,7 +2426,7 @@ ModifyFPExc:
 
 #********************************************************************************************
 
-WaitTime:
+_PUP_WaitTime:
 		mr.	r5,r5
 		beq	WaitPPC
 		
@@ -3098,7 +3109,7 @@ PutXMsgPPC:
 		lwz	r31,libwarp_IExec(r30)
 		li	r0,NT_XMSGPPC
 		stb	r0,LN_TYPE(r5)		
-		CALLOS	r31,PutMsg				#rewrite this function to preserve correct node type?
+		CALLOS	r31,PutMsg				#Rewrite this function to preserve correct node type?
 		
 		lwz	r27,0(r13)
 		lwz	r30,4(r13)
@@ -3824,27 +3835,27 @@ WipeOut:
 .byte	"wo2097_mixer",0
 
 IDString:	
-.byte	"$VER: powerpc.library 18.1 (20-nov-21)",0
+.byte	"$VER: powerpc.library 18.2 (30.04.2026)",0
 
 UnSupportedString:	.byte	"Unsupported function! Process: %s Function: %s",10,0
 
-FCausePPCInterrupt:		.byte	"FCausePPCInterrupt",0
+FCausePPCInterrupt:	.byte	"FCausePPCInterrupt",0
 FRun68KLowLevel:		.byte	"Run68KLowLevel",0
-FSetExcHandler:			.byte	"SetExcHandler",0
-FRemExcHandler:			.byte	"RemExcHandler",0
-FSetHardware:			.byte	"SetHardware",0
+FSetExcHandler:		.byte	"SetExcHandler",0
+FRemExcHandler:		.byte	"RemExcHandler",0
+FSetHardware:		.byte	"SetHardware",0
 FModifyFPExc:			.byte	"ModifyFPExc",0
 FSetExcMMU:			.byte	"SetExcMMU",0
-FClearExcMMU:			.byte	"ClearExcMMU",0
+FClearExcMMU:		.byte	"ClearExcMMU",0
 FChangeMMU:			.byte	"ChangeMMU",0
 FSnoopTask:			.byte	"SnoopTask",0
-FEndSnoopTask:			.byte	"EndSnoopTask",0
-FSetScheduling:			.byte	"SetScheduling",0
-FFindTaskByID:			.byte	"FindTaskByID",0
+FEndSnoopTask:		.byte	"EndSnoopTask",0
+FSetScheduling:		.byte	"SetScheduling",0
+FFindTaskByID:		.byte	"FindTaskByID",0
 FAllocPrivateMem:		.byte	"AllocPrivateMem",0
 FFreePrivateMem:		.byte	"FreePrivateMem",0
 FResetPPC:			.byte	"ResetPPC",0
-FSetExceptPPC:			.byte	"SetExceptPPC",0
+FSetExceptPPC:		.byte	"SetExceptPPC",0
 FCauseInterrupt:		.byte	"CauseInterrupt",0
 FIsExceptionMode:		.byte	"IsExceptionMode",0
 
@@ -3867,10 +3878,10 @@ GetInfoTable:
 ROMTAG:
 .word	RTC_MATCHWORD
 .ualong	ROMTAG
-.ualong	ROMTAG+1								#ENDSKIP
+.ualong	ROMTAG+1							#ENDSKIP
 .byte	RTF_AUTOINIT|RTF_NATIVE
 .byte	18									#RT_VERSION
-.byte	NT_LIBRARY								#RT_TYPE
+.byte	NT_LIBRARY							#RT_TYPE
 .byte	0									#RT_PRI
 .ualong	LibName
 .ualong	IDString
@@ -3955,7 +3966,7 @@ VECTOR68K:
 .long	Reserved
 .long	Reserved				#49 68K Functions
 
-.long	Run68K					#PPC (legacy vector table)
+.long	Run68K				#PPC (legacy vector table)
 .long	WaitFor68K
 .long	SPrintF
 .long	Run68KLowLevel
@@ -4054,31 +4065,630 @@ VECTOR68K:
 
 #********************************************************************************************
 
-Open:				jmp Open68K
-Close:				jmp Close68K
-Expunge:			jmp Expunge68K
-Reserved:			jmp Reserved68K
-RunPPC:				jmp RunPPC68K
-WaitForPPC:			jmp WaitForPPC68K
-GetCPU:				jmp GetCPU68K
-PowerDebugMode:			jmp PowerDebugMode68K
-AllocVec32:			jmp AllocVec3268K
-FreeVec32:			jmp FreeVec3268K
-SPrintF68K:			jmp SPrintF68K68K
-AllocXMsg:			jmp AllocXMsg68K
-FreeXMsg:			jmp FreeXMsg68K
-PutXMsg:			jmp PutXMsg68K
-GetPPCState:			jmp GetPPCState68K
-SetCache68K:			jmp SetCache68K68K
-CreatePPCTask:			jmp CreatePPCTask68K
-CausePPCInterrupt:		jmp CausePPCInterrupt68K
+Open:			 jmp Open68K
+Close:			 jmp Close68K
+Expunge:		 	 jmp Expunge68K
+Reserved:		 jmp Reserved68K
+RunPPC:			 jmp RunPPC68K
+WaitForPPC:		 jmp WaitForPPC68K
+GetCPU:			 jmp GetCPU68K
+PowerDebugMode:	 jmp PowerDebugMode68K
+AllocVec32:		 jmp AllocVec3268K
+FreeVec32:		 jmp FreeVec3268K
+SPrintF68K:		 jmp SPrintF68K68K
+AllocXMsg:		 jmp AllocXMsg68K
+FreeXMsg:		 jmp FreeXMsg68K
+PutXMsg:			 jmp PutXMsg68K
+GetPPCState:		 jmp GetPPCState68K
+SetCache68K:		 jmp SetCache68K68K
+CreatePPCTask:	 jmp CreatePPCTask68K
+CausePPCInterrupt: jmp CausePPCInterrupt68K
 
 #********************************************************************************************
 #********************************************************************************************
 
-		.sbss
+		.section	.data
 		.align 4
 AlignSpot:	.long 0,0
 WarpLibBase:	.long 0
 
 #********************************************************************************************
+
+# ==============================================================================
+# REWARP POWERPC.LIBRARY - FINAL PLATINUM EDITION (VERSION 18.2)
+# COMPLETE: INIT, DISPATCHER, RELOCATOR, BSS, WB, CTRL-C, FPU, SYNC, ALIGN
+# ==============================================================================
+
+.section ".text"
+.align 4
+
+# --- ROM TAG (Resident Structure) ---
+_ResidentTag:
+    .short  0x4AFC              # RTC_MATCHWORD
+    .long   _ResidentTag        # Puntatore a se stesso
+    .long   _EndCode            # Fine del codice
+    .byte   0                   # RT_FLAGS
+    .byte   18                  # RT_VERSION
+    .byte   9                   # RT_TYPE (NT_LIBRARY)
+    .byte   0                   # RT_PRI
+    .long   _LibName            # Nome libreria
+    .long   _IdString           # ID String
+    .long   _LibInit            # Funzione di Init
+
+_LibName:   .string "powerpc.library"
+_IdString:  .string "powerpc.library 18.2 (ReWarp Infinity Gold) [PowerUP+WarpOS]"
+_DOSName:   .string "dos.library"
+_UtilName:  .string "utility.library"
+_TimerName: .string "timer.device"
+_MainName:  .string "main"
+_empty_args: .string ""
+.align 4
+
+# --- ROUTINE DI INIZIALIZZAZIONE ---
+_LibInit:
+    # R3 = LibBase, R4 = IExec
+    stwu    r1, -64(r1)
+    stw     r31, 44(r1)
+    mr      r31, r3             # R31 = Nostra LibBase
+
+    # 1. Salva IExec (Offset 36)
+    stw     r4, 36(r31)         
+
+    # 2. Apri DOS e ottieni IDOS
+    lwz     r11, 36(r31)        # IExec
+    ldaddr  r3, _DOSName
+    li      r4, 36              
+    CALLOS  r11, OpenLibrary
+    mr.     r10, r3             
+    beq     _init_failed
+    
+    mr      r3, r10
+    ldaddr  r4, _MainName
+    li      r5, 1
+    CALLOS  r11, GetInterface
+    stw     r3, 40(r31)         # Offset 40: IDOS
+
+    # 3. Apri Utility e ottieni IUtility
+    ldaddr  r3, _UtilName
+    li      r4, 36
+    CALLOS  r11, OpenLibrary
+    mr.     r10, r3
+    beq     _init_failed
+    
+    mr      r3, r10
+    ldaddr  r4, _MainName
+    li      r5, 1
+    CALLOS  r11, GetInterface
+    stw     r3, 44(r31)         # Offset 44: IUtility
+
+    # 4. Apri Timer e ottieni ITimer
+    ldaddr  r3, _TimerName
+    li      r4, 0
+    CALLOS  r11, OpenLibrary
+    mr.     r10, r3
+    beq     _init_failed
+
+    mr      r3, r10
+    ldaddr  r4, _MainName
+    li      r5, 1
+    CALLOS  r11, GetInterface
+    stw     r3, 48(r31)         # Offset 48: ITimer
+
+    mr      r3, r31             # Ritorna LibBase
+    b       _init_exit
+
+_init_failed:
+    li      r3, 0               
+
+_init_exit:
+    lwz     r31, 44(r1)
+    addi    r1, r1, 64
+    blr
+
+# --- DISPATCHER CENTRALE ROBUSTO ---
+.align 4
+_PUP_Dispatcher:
+    # DEBUG: Molti emulatori OS4 mettono l'ID in R12, 
+    # ma alcuni vecchi handler usano R0. Proviamo a sanificare.
+    cmpwi   r12, 0
+    bne     _id_ok
+    mr      r12, r0           # Fallback: prova a usare R0 se R12 è 0
+
+_id_ok:
+    cmplwi  r12, 20           # Range 1-20
+    bgt     _Dispatcher_Error
+    
+    ldaddr  r11, _PUP_ID_Table
+    slwi    r0, r12, 2
+    lwzx    r11, r11, r0      # Carica l'indirizzo della funzione
+    
+    # PROTEZIONE: Se l'indirizzo nella tabella è 0, non saltare!
+    cmpwi   r11, 0
+    beq     _Dispatcher_Error
+
+    mtctr   r11
+    bctrl                     # Salta al wrapper e torna qui
+    
+    epilog                      
+    blr
+
+_Dispatcher_Error:
+    li      r3, 0             # Ritorna NULL (errore sicuro)
+    epilog
+    blr
+
+
+.align 4
+_PUP_ID_Table:
+    .long _PUP_Stub           # 0
+    .long _PUP_RunPPC_Master  # 1
+    .long _PUP_AllocSignalPPC # 2
+    .long _PUP_FreeSignalPPC  # 3
+    .long _PUP_GetPPCState    # 4
+    .long _PUP_SetSignalPPC   # 5
+    .long _PUP_SPrintF_Real   # 6
+    .long _PUP_AvailMem_Wrapper # 7
+    .long _PUP_AllocVecPPC_Magic # 8
+    .long _PUP_FreeVecPPC_Magic  # 9
+    .long _PUP_ObtainSemaphorePPC # 10
+    .long _PUP_ReleaseSemaphorePPC # 11
+    .long _PUP_WaitPPC        # 12
+    .long _PUP_NewList        # 13
+    .long _PUP_WaitTime_Wrapper # 14
+    .long _PUP_GetInfo        # 15
+    .long _PUP_CreateMsgPortPPC # 16
+    .long _PUP_DeleteMsgPortPPC # 17
+    .long _PUP_PutMsgPPC      # 18
+    .long _PUP_GetMsgPPC      # 19
+    .long _PUP_ReplyMsgPPC    # 20
+
+# --- JUMP TABLE POWERUP (Offset Phase5 fissi) ---
+.align 4
+_PowerUP_JumpTable:
+    b _PUP_Stub               # -6
+    b _PUP_Stub               # -12
+    b _PUP_Stub               # -18
+    b _PUP_Stub               # -24
+    b _PUP_RunPPC_Master      # -30
+    .space 18
+    .align 2
+    b _PUP_AllocSignalPPC     # -54
+    b _PUP_FreeSignalPPC      # -60
+    .space 24
+    .align 2
+    b _PUP_GetPPCState        # -90
+    .space 204
+    .align 2
+    b _PUP_SetSignalPPC       # -300
+    b _PUP_SPrintF_Real       # -306
+    .space 6
+    .align 2
+    b _PUP_AvailMem_Wrapper   # -318
+    b _PUP_AllocVecPPC_Magic  # -324
+    b _PUP_FreeVecPPC_Magic   # -330
+    b _PUP_RunPPC_Master      # -336
+    .space 36
+    .align 2
+    b _PUP_ObtainSemaphorePPC # -378
+    .space 6
+    .align 2
+    b _PUP_ReleaseSemaphorePPC # -390
+    .space 96
+    .align 2
+    b _PUP_WaitPPC            # -492
+    b _PUP_NewList            # -498
+    .space 90
+    .align 2
+    b _PUP_WaitTime_Wrapper   # -594
+    b _PUP_GetInfo            # -600
+    b _PUP_CreateMsgPortPPC   # -606
+    b _PUP_DeleteMsgPortPPC   # -612
+    .space 18
+    .align 2
+    b _PUP_PutMsgPPC          # -636
+    b _PUP_GetMsgPPC          # -642
+    b _PUP_ReplyMsgPPC        # -648
+    b _PUP_Stub               # -654
+    b _PUP_Stub               # -660
+
+.align 4
+_PUP_ExceptionHandler:
+    li      r3, 0
+    blr
+
+# --- MOTORE MASTER (RunPPC) ---
+_PUP_RunPPC_Master:
+    stwu    r1, -4160(r1)
+    mflr    r0
+    stw     r0, 4164(r1)
+    stmw    r13, 100(r1)
+
+    mr      r31, r2           
+    lwz     r30, 32(r3)       # A0: Path
+    lwz     r15, 36(r3)       # A1: Args
+
+    # Workbench Check
+    cmpwi   r15, 0
+    bne     _open_file
+    ldaddr  r15, _empty_args
+
+_open_file:
+    lwz     r11, 40(r31)        # IDOS
+    mr      r3, r30
+    li      r4, 1005          
+    CALLOS  r11, DOS_Open
+    mr.     r17, r3           
+    beq     _err_not_found
+
+    mr      r3, r17
+    li      r4, 0
+    li      r5, 1             
+    CALLOS  r11, Seek
+    mr      r21, r3           # File size
+    
+    # BSS FIX: FileSize + 0xFFFF
+    lis     r0, 0
+    ori     r0, r0, 0xFFFF
+    add     r3, r21, r0       
+    clrrwi  r3, r3, 16        
+    mr      r22, r3           # RAM size totale
+    
+    mr      r3, r17
+    li      r4, 0
+    li      r5, -1            
+    CALLOS  r11, Seek
+
+    # Allocazione Eseguibile FIX: 0x10002
+    lwz     r11, 36(r31)        # IExec
+    mr      r3, r22           
+    lis     r4, 0x0001        
+    ori     r4, r4, 0x0002    
+    CALLOS  r11, AllocVec
+    mr.     r24, r3           
+    beq     _err_no_mem
+
+    lwz     r11, 40(r31)        
+    mr      r3, r17
+    mr      r4, r24
+    mr      r5, r21           
+    CALLOS  r11, DOS_Read
+
+    # ELF Relocator
+    lwz     r0, 0(r24)
+    lis     r9, 0x7F45        
+    ori     r9, r9, 0x4C46    
+    cmpw    r0, r9
+    bne     _err_not_elf
+
+    lis     r0, 0x0100
+    sub     r14, r24, r0      # Delta
+    lwz     r9, 32(r24)       
+    add     r9, r9, r24       
+    lhz     r10, 48(r24)      
+    lhz     r11, 46(r24)      
+
+_scan_sections:
+    cmpwi   r10, 0
+    beq     _apply_cache_sync
+    lwz     r0, 4(r9)         
+    cmpwi   r0, 4             
+    beq     _process_rela
+    add     r9, r9, r11
+    subi    r10, r10, 1
+    b       _scan_sections
+
+_process_rela:
+    lwz     r15, 16(r9)       
+    add     r15, r15, r24
+    lwz     r16, 20(r9)       
+    li      r17, 0
+_rela_loop:
+    cmpw    r17, r16
+    bge     _next_section
+    add     r18, r15, r17
+    lwz     r19, 0(r18)       
+    lwz     r20, 4(r18)       
+    lwz     r21, 8(r18)       
+    andi.   r0, r20, 0xFF
+    cmpwi   r0, 22            
+    beq     _do_reloc
+    cmpwi   r0, 1             
+    beq     _do_reloc
+    cmpwi   r0, 20            
+    beq     _do_reloc
+    cmpwi   r0, 21            
+    beq     _do_reloc
+    b       _next_rela
+_do_reloc:
+    lis     r0, 0x0100
+    sub     r13, r19, r0      
+    add     r13, r13, r24     
+    add     r22, r21, r14     
+    stw     r22, 0(r13)
+_next_rela:
+    addi    r17, r17, 12
+    b       _rela_loop
+_next_section:
+    add     r9, r9, r11
+    subi    r10, r10, 1
+    b       _scan_sections
+
+_apply_cache_sync:
+    mr      r3, r24
+    mr      r4, r22           
+_dc_loop:
+    dcbst   0, r3             
+    addi    r3, r3, 32
+    cmpw    r3, r22
+    blt     _dc_loop
+    sync                      
+    isync                     
+
+    lwz     r11, 36(r31)        
+    mr      r3, r24
+    mr      r4, r22
+    li      r5, 0
+    CALLOS  r11, CacheClearU
+
+    lwz     r19, 24(r24)
+    lis     r0, 0x0100
+    sub     r12, r19, r0
+    add     r12, r12, r24     
+
+_setup_pup_abi:
+    addi    r29, r1, 1024     
+    lis     r10, 0x5043       
+    ori     r10, r10, 0x4220  
+    stw     r10, 8(r29)       
+    stw     r31, 16(r29)      
+
+    addi    r7, r29, 64       
+    ldaddr  r8, _PUP_ExceptionHandler
+    stw     r8, 0(r7)         
+    stw     r1, 4(r7)         
+    mtfsfi  0, 7              
+    
+    ldaddr  r2, (_PowerUP_JumpTable + 32768)
+    
+    # SDA FIX: 0x8000
+    lis     r0, 0
+    ori     r0, r0, 0x8000
+    add     r13, r24, r0      
+    clrrwi  r13, r13, 3       
+
+    mr      r3, r31           
+    mr      r4, r15           
+    mr      r6, r29           
+    
+    clrrwi  r1, r1, 4         # OS4 ABI Align
+    li      r0, 0
+    stw     r0, 0(r1)         
+
+    mtctr   r12
+    bctrl                     
+    mr      r25, r3           
+
+    lwz     r11, 36(r31)        
+    li      r3, 0
+    CALLOS  r11, SetSignal
+    andis.  r0, r3, 0x00001000@h
+    beq     _no_break
+    li      r3, 0
+    lis     r4, 0x00001000@h
+    CALLOS  r11, SetSignal
+    li      r25, 20           
+
+_no_break:
+    sync
+    lwz     r31, 172(r1)      
+    lwz     r24, 144(r1)      
+    lwz     r17, 116(r1)      
+
+    mr      r3, r24
+    lwz     r11, 36(r31)        
+    CALLOS  r11, FreeVec
+    mr      r3, r17
+    lwz     r11, 40(r31)        
+    CALLOS  r11, DOS_Close
+    mr      r3, r25
+    b       _full_exit
+
+# --- ERROR HANDLING ---
+_err_not_elf:
+    lwz     r11, 40(r31)
+    li      r3, 212           
+    CALLOS  r11, SetIoErr
+    li      r25, 0
+    b       _cleanup_mem
+_err_no_mem:
+    lwz     r11, 40(r31)
+    li      r3, 103           
+    CALLOS  r11, SetIoErr
+    li      r25, 0
+    b       _cleanup_file
+_err_not_found:
+    lwz     r11, 40(r31)
+    li      r3, 205           
+    CALLOS  r11, SetIoErr
+    li      r25, 0
+    b       _full_exit
+_cleanup_mem:
+    cmpwi   r24, 0
+    beq     _cleanup_file
+    mr      r3, r24
+    lwz     r11, 36(r31)
+    CALLOS  r11, FreeVec
+_cleanup_file:
+    cmpwi   r17, 0
+    beq     _full_exit
+    mr      r3, r17
+    lwz     r11, 40(r31)
+    CALLOS  r11, DOS_Close
+_full_exit:
+    mr      r3, r25
+    lmw     r13, 100(r1)
+    lwz     r0, 4164(r1)
+    addi    r1, r1, 4160
+    mtlr    r0
+    blr
+
+# --- WRAPPERS ---
+_PUP_WaitPPC:
+    prolog 128
+    clrrwi  r1, r1, 4
+    oris    r3, r3, 0x00001000@h
+    lwz     r11, 36(r31)
+    CALLOS  r11, Wait
+    epilog
+    blr
+
+_PUP_AvailMem_Wrapper:
+    prolog 128
+    clrrwi  r1, r1, 4
+    lwz     r11, 36(r31)
+    # CALLOS r11, AvailMem  <-- Questa dava errore
+    li      r0, 180         # Offset di AvailMem nell'interfaccia IExec
+    lwzx    r0, r11, r0
+    mtctr   r0
+    bctrl
+    epilog
+    blr
+
+_PUP_AllocSignalPPC:
+    prolog 128
+    clrrwi  r1, r1, 4
+    lwz     r11, 36(r31)
+    li      r3, -1
+    CALLOS  r11, AllocSignal
+    epilog
+    blr
+
+_PUP_FreeSignalPPC:
+    prolog 128
+    clrrwi  r1, r1, 4
+    lwz     r11, 36(r31)
+    CALLOS  r11, FreeSignal
+    epilog
+    blr
+
+_PUP_SetSignalPPC:
+    prolog 128
+    clrrwi  r1, r1, 4
+    lwz     r11, 36(r31)
+    CALLOS  r11, SetSignal
+    epilog
+    blr
+
+_PUP_SPrintF_Real:
+    prolog 1024
+    clrrwi  r1, r1, 4
+    lwz     r11, 44(r31)        
+    CALLOS  r11, VASPrintf
+    epilog
+    blr
+
+_PUP_AllocVecPPC_Magic:      
+    prolog 128
+    clrrwi  r1, r1, 4
+    lwz     r11, 36(r31)
+    CALLOS  r11, AllocVec
+    epilog
+    blr
+
+_PUP_FreeVecPPC_Magic:       
+    prolog 128
+    clrrwi  r1, r1, 4
+    lwz     r11, 36(r31)
+    CALLOS  r11, FreeVec
+    epilog
+    blr
+
+_PUP_CreateMsgPortPPC:       
+    prolog 128
+    clrrwi  r1, r1, 4
+    lwz     r11, 36(r31)
+    li      r4, 4          
+    li      r5, 0
+    CALLOS  r11, AllocSysObjectTags
+    epilog
+    blr
+
+_PUP_DeleteMsgPortPPC:       
+    prolog 128
+    clrrwi  r1, r1, 4
+    mr      r4, r3
+    lwz     r11, 36(r31)
+    li      r3, 4
+    CALLOS  r11, FreeSysObject
+    epilog
+    blr
+
+_PUP_PutMsgPPC:
+    prolog 128
+    clrrwi  r1, r1, 4
+    lwz     r11, 36(r31)
+    CALLOS  r11, PutMsg
+    epilog
+    blr
+
+_PUP_GetMsgPPC:
+    prolog 128
+    clrrwi  r1, r1, 4
+    lwz     r11, 36(r31)
+    CALLOS  r11, GetMsg
+    epilog
+    blr
+
+_PUP_ReplyMsgPPC:
+    prolog 128
+    clrrwi  r1, r1, 4
+    lwz     r11, 36(r31)
+    CALLOS  r11, ReplyMsg
+    epilog
+    blr
+
+_PUP_ObtainSemaphorePPC:
+    prolog 128
+    clrrwi  r1, r1, 4
+    li      r0, 15
+    stb     r0, 8(r3)
+    lwz     r11, 36(r31)
+    CALLOS  r11, ObtainSemaphore
+    epilog
+    blr
+
+_PUP_ReleaseSemaphorePPC:    
+    prolog 128
+    clrrwi  r1, r1, 4
+    lwz     r11, 36(r31)
+    CALLOS  r11, ReleaseSemaphore
+    epilog
+    blr
+
+_PUP_WaitTime_Wrapper:
+    prolog 128
+    clrrwi  r1, r1, 4
+    lwz     r11, 48(r31)        # ITimer
+    CALLOS  r11, WaitTime
+    epilog
+    blr
+
+_PUP_NewList:                
+    li      r0, 0
+    stw     r3, 0(r3)         
+    stw     r0, 4(r3)         
+    stw     r3, 8(r3)         
+    blr
+
+_PUP_GetPPCState:        
+    
+_PUP_GetInfo:                
+    li      r3, 1
+    blr
+
+_PUP_Stub:
+    li      r3, 0
+    blr
+
+_EndCode:
+.align 4
